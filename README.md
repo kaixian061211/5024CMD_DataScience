@@ -46,8 +46,8 @@ fixed seed, so repeated runs give identical logs.
 ## Rule Explorer
 
 ```
-python Rule_Explorer.py            # opens the window
-python Rule_Explorer.py --check    # prints the model checks only
+python Rule_Explorer.py            # writes the log, opens the window
+python Rule_Explorer.py --check    # writes the log only
 ```
 
 A small window for trying the model on one client at a time, run after
@@ -59,11 +59,13 @@ business rules that apply. A client who was never contacted before has the
 previous outcome fixed at `unknown`, as in the data.
 
 The models are rebuilt with the same inputs, split, seed and settings as
-`Predictive_Model.py`, so they match Section 4 of the report: the check
-prints Logistic Regression test F1 0.648 and AUC 0.741, and the tree's root
-split of 749 training clients, 682 of whom subscribed. "Random test client"
-loads a client from the 30% test set and shows whether they actually
-subscribed.
+`Predictive_Model.py`, so they match Section 4 of the report. Every run
+writes `output/rule_explorer_report.txt`, which repeats Logistic
+Regression's test F1 of 0.648 and AUC of 0.741 and the tree's root split of
+749 training clients, 682 of whom subscribed, and records the three example
+clients discussed in Section 4.7 (Figure 4.6 is the opening view). "Random
+test client" loads a client from the 30% test set and shows whether they
+actually subscribed.
 
 ![Rule Explorer window](docs/rule_explorer.png)
 
@@ -75,7 +77,7 @@ subscribed.
 | `Data_Preprocessing.py` | 2 | `AnalysisSet` | `CleanedData` table, `output/data_preprocessing_report.txt` |
 | `Exploratory_Analysis.py` | 3 | `CleanedData` | Figures 1.1 and 3.1–3.6, `output/exploratory_analysis_report.txt` |
 | `Predictive_Model.py` | 4 | `CleanedData` | Figures 4.1–4.5, `output/predictive_model_report.txt` |
-| `Rule_Explorer.py` | – | `CleanedData` | Nothing (opens a window) |
+| `Rule_Explorer.py` | – | `CleanedData` | `output/rule_explorer_report.txt`, then opens a window |
 | `data_model_erd.dot` | – | – | Source for Figure 2.1 |
 
 The database is not committed, because stage 1 rebuilds it. The logs and
@@ -99,6 +101,7 @@ them.
 | Figure 4.3 | `fig13_lr_odds_ratios.png` |
 | Figure 4.4 | `fig12_decision_tree.png` |
 | Figure 4.5 | `fig10_confusion_matrices.png` |
+| Figure 4.6 | `docs/rule_explorer.png` (screenshot of the Rule Explorer) |
 
 `fig11_feature_importance.png` is still produced by stage 4 but is not used
 in the report.

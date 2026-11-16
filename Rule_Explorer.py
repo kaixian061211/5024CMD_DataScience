@@ -17,10 +17,14 @@ The models are rebuilt on start with the same inputs, split, seed and
 settings as Predictive_Model.py, which they are imported from, so the
 window shows the same models as Section 4 of the report.
 
+On every run, a log of checks against predictive_model_report.txt and
+of the example clients quoted in Section 4.7 is written to
+output/rule_explorer_report.txt.
+
 Run from the Portfolio folder, after Init_Database.py and
 Data_Preprocessing.py:
-    python Rule_Explorer.py            opens the window
-    python Rule_Explorer.py --check    prints the model checks only
+    python Rule_Explorer.py            writes the log, opens the window
+    python Rule_Explorer.py --check    writes the log only
 """
 
 import random
@@ -67,6 +71,8 @@ QUARTERS = {"Q1": "Jan–Mar", "Q2": "Apr–Jun", "Q3": "Jul–Sep",
 
 NOT_CONTACTED = "Not contacted"
 
+REPORT = "output/rule_explorer_report.txt"
+
 # Colours
 BACKGROUND = "#F7F7F7"
 PANEL = "#FFFFFF"
@@ -76,6 +82,13 @@ MUTED = "#8A8A8A"
 CALL = "#1B7A4A"
 NO_CALL = "#B03A2E"
 TRACK = "#E4E4E4"
+
+lines = []
+
+
+def log(text=""):
+    print(text)
+    lines.append(str(text))
 
 
 # ============================================================
@@ -140,29 +153,67 @@ def encode(profile, columns):
     return row
 
 
-def tree_path(models, row):
-    """The questions the tree asks this client, and the leaf it reaches."""
+def most_common_profile(data):
+    """The most common level of every input: the window's opening view."""
+    return {column: data[column].mode()[0] for column, _, _ in PROFILE}
+
+
+def assess(models, profile):
+    """Both models' answers for one client profile."""
+    profile = dict(profile)
+    profile["contacted_before"] = (
+        "no" if profile["pdays_group"] == NOT_CONTACTED else "yes"
+    )
+    row = encode(profile, models["columns"])
+
+    regression = models["regression"]
+    probability = regression.predict_proba(row)[0, 1]
+    # Difference from the overall rate, taken from the rounded values as
+    # in the other logs
+    difference = (round(probability * 100, 1)
+                  - round(models["overall"] * 100, 1))
+
+    # The questions the tree asks this client, and the leaf it reaches
     tree = models["tree"]
     structure = tree.tree_
     nodes = tree.decision_path(row).indices
     steps = []
     for node in nodes[:-1]:
-        position = structure.feature[node]
-        attribute, level = split_column(models["columns"][position])
-        answer = row.iloc[0, position] > structure.threshold[node]
-        steps.append((attribute, level, answer))
+        column = models["columns"][structure.feature[node]]
+        attribute, level = split_column(column)
+        answer = bool(row.iloc[0, structure.feature[node]]
+                      > structure.threshold[node])
+        steps.append((column, attribute, level, answer))
     total, yes = models["leaves"].loc[nodes[-1]]
-    return steps, int(total), int(yes), int(tree.predict(row)[0])
+
+    return {
+        "probability": probability,
+        "difference": difference,
+        "call": int(regression.predict(row)[0]) == 1,
+        "steps": steps,
+        "leaf_total": int(total),
+        "leaf_yes": int(yes),
+        "tree_says_yes": int(tree.predict(row)[0]) == 1,
+    }
 
 
-def check(models):
-    """Print the figures to compare with predictive_model_report.txt."""
-    print("Rule Explorer: models rebuilt with the Predictive_Model.py "
-          "settings")
-    print(f"   training clients: {len(models['y_train']):,}   "
-          f"test clients: {len(models['x_test']):,}")
+# ============================================================
+# LOG - checks, and the example clients quoted in the report
+# ============================================================
+def report(models):
+    data = models["data"]
+    overall = models["overall"]
+
+    log("=" * 62)
+    log(" RULE EXPLORER - CHECKS AND EXAMPLES")
+    log("=" * 62)
+    log()
+    log("Models rebuilt with the inputs, split, seed and settings of")
+    log("Predictive_Model.py (compare predictive_model_report.txt)")
+    log(f"   training clients: {len(models['y_train']):,}   "
+        f"test clients: {len(models['x_test']):,}")
     for name, (f1, auc) in models["scores"].items():
-        print(f"   {name:20} test F1 {f1:.3f}   AUC {auc:.3f}")
+        log(f"   {name:20} test F1 {f1:.3f}   AUC {auc:.3f}")
 
     # Training clients answering 'yes' at the root of the tree
     tree = models["tree"]
@@ -172,9 +223,63 @@ def check(models):
     reached = reached.toarray().ravel().astype(bool)
     subscribed = int(models["y_train"].to_numpy()[reached].sum())
     attribute, level = split_column(models["columns"][root])
-    print(f"   tree root: {attribute} = {level}? yes -> "
-          f"{int(reached.sum()):,} training clients, "
-          f"{subscribed:,} subscribed")
+    log(f"   tree root: {attribute} = {level}? yes -> "
+        f"{int(reached.sum()):,} training clients, "
+        f"{subscribed:,} subscribed")
+    log(f"   decision tree rules (leaves): {tree.get_n_leaves()}")
+    log()
+
+    log("Never-contacted rule enforced by the window")
+    never = data[data["pdays_group"] == NOT_CONTACTED]
+    log(f"   pdays_group = {NOT_CONTACTED}: {len(never):,} clients")
+    log(f"   of these, contacted_before = no: "
+        f"{(never['contacted_before'] == 'no').sum():,}   "
+        f"poutcome = unknown: {(never['poutcome'] == 'unknown').sum():,}")
+    log()
+
+    base = most_common_profile(data)
+    examples = [
+        ("Opening view: the most common level of every input", base),
+        ("Opening view, with contact_type = unknown",
+         {**base, "contact_type": "unknown"}),
+        ("Opening view, contacted recently and the previous campaign "
+         "succeeded", {**base, "pdays_group": "Recent",
+                       "poutcome": "success"}),
+    ]
+    x_train = models["x_train"]
+    y_train = models["y_train"]
+
+    for number, (title, profile) in enumerate(examples, start=1):
+        result = assess(models, profile)
+        log(f"Example {number}: {title}")
+        settings = [f"{column}={profile[column]}" for column, _, _ in PROFILE]
+        log("   " + ", ".join(settings[:7]))
+        log("   " + ", ".join(settings[7:]))
+
+        direction = "above" if result["difference"] >= 0 else "below"
+        log(f"   Logistic Regression: probability "
+            f"{result['probability']:.1%}, "
+            f"{abs(result['difference']):.1f} points {direction} the "
+            f"{overall:.1%} overall rate -> "
+            f"{'call' if result['call'] else 'do not call'}")
+
+        log("   Decision tree:")
+        for step, (_, attribute, level, answer) in enumerate(
+                result["steps"], start=1):
+            log(f"      {step}. {attribute} = {level}? "
+                f"{'yes' if answer else 'no'}")
+        total, yes = result["leaf_total"], result["leaf_yes"]
+        log(f"      reached by {total:,} training clients, {yes:,} "
+            f"subscribed ({yes / total:.1%}) -> "
+            f"{'subscribes' if result['tree_says_yes'] else 'does not subscribe'}")
+
+        # The same count found directly, by filtering the training rows
+        match = pd.Series(True, index=x_train.index)
+        for column, _, _, answer in result["steps"]:
+            match &= x_train[column] == answer
+        log(f"      check: training clients giving the same answers: "
+            f"{int(match.sum()):,}, subscribed {int(y_train[match].sum()):,}")
+        log()
 
 
 # ============================================================
@@ -360,8 +465,7 @@ class RuleExplorer:
         self.refresh()
 
     def most_common(self):
-        self.set_profile({column: self.data[column].mode()[0]
-                          for column, _, _ in PROFILE})
+        self.set_profile(most_common_profile(self.data))
         self.status.config(text="Showing the most common level of every "
                                 "input. " + self.model_note)
 
@@ -403,23 +507,21 @@ class RuleExplorer:
 
         profile = {column: self.choice[column].get()
                    for column, _, _ in PROFILE}
-        profile["contacted_before"] = "yes" if contacted else "no"
-        row = encode(profile, self.models["columns"])
+        result = assess(self.models, profile)
 
-        self.show_regression(row)
-        self.show_tree(row)
+        self.show_regression(result)
+        self.show_tree(result)
         self.show_rules(contacted)
 
-    def show_regression(self, row):
-        model = self.models["regression"]
-        probability = model.predict_proba(row)[0, 1]
-        call = model.predict(row)[0] == 1
+    def show_regression(self, result):
+        probability = result["probability"]
+        call = result["call"]
         overall = self.models["overall"]
 
         colour = CALL if call else NO_CALL
         self.decision.config(text="CALL" if call else "DO NOT CALL",
                              fg=colour)
-        difference = (probability - overall) * 100
+        difference = result["difference"]
         direction = "above" if difference >= 0 else "below"
         self.probability.config(
             text=f"Probability of subscribing: {probability:.1%}, "
@@ -446,22 +548,22 @@ class RuleExplorer:
                         font=self.fonts["small"], fill=TEXT,
                         text="call above 50%")
 
-    def show_tree(self, row):
-        steps, total, yes, predicted = tree_path(self.models, row)
+    def show_tree(self, result):
+        total, yes = result["leaf_total"], result["leaf_yes"]
         text = self.path
         text.config(state="normal")
         text.delete("1.0", "end")
-        for number, (attribute, level, answer) in enumerate(steps, start=1):
+        for number, (_, attribute, level, answer) in enumerate(
+                result["steps"], start=1):
             text.insert("end", f"{number}.  {attribute} = {level}?  ")
             text.insert("end", "yes" if answer else "no", "bold")
             text.insert("end", "\n")
         text.insert("end", f"Reached by {total:,} training clients, "
                            f"{yes:,} subscribed ({yes / total:.1%}).\n")
         text.insert("end", "Tree predicts: ")
-        text.insert("end", "subscribes" if predicted else "does not subscribe",
-                    "bold")
-        regression = self.models["regression"].predict(row)[0]
-        if regression != predicted:
+        text.insert("end", "subscribes" if result["tree_says_yes"]
+                    else "does not subscribe", "bold")
+        if result["call"] != result["tree_says_yes"]:
             text.insert("end", "  (the two models disagree here)", "muted")
         text.config(state="disabled")
 
@@ -474,7 +576,10 @@ class RuleExplorer:
 
 def main():
     models = build()
-    check(models)
+    report(models)
+    with open(REPORT, "w") as handle:
+        handle.write("\n".join(lines))
+    print(f"Log written to {REPORT}")
     if "--check" in sys.argv:
         return
     root = tk.Tk()

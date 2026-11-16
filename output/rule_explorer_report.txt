@@ -1,0 +1,53 @@
+==============================================================
+ RULE EXPLORER - CHECKS AND EXAMPLES
+==============================================================
+
+Models rebuilt with the inputs, split, seed and settings of
+Predictive_Model.py (compare predictive_model_report.txt)
+   training clients: 7,813   test clients: 3,349
+   Logistic Regression  test F1 0.648   AUC 0.741
+   Decision Tree        test F1 0.633   AUC 0.732
+   tree root: poutcome = success? yes -> 749 training clients, 682 subscribed
+   decision tree rules (leaves): 22
+
+Never-contacted rule enforced by the window
+   pdays_group = Not contacted: 8,324 clients
+   of these, contacted_before = no: 8,324   poutcome = unknown: 8,324
+
+Example 1: Opening view: the most common level of every input
+   age_group=Low, job_group=Skilled, marital=married, education=secondary, credit_default=no, balance_group=Low, housing=no
+   loan=no, contact_type=cellular, month_group=Q2, campaign_group=Low, pdays_group=Not contacted, poutcome=unknown
+   Logistic Regression: probability 53.4%, 6.0 points above the 47.4% overall rate -> call
+   Decision tree:
+      1. poutcome = success? no
+      2. contact_type = unknown? no
+      3. housing = yes? no
+      4. month_group = Q2? yes
+      5. poutcome = failure? no
+      reached by 563 training clients, 445 subscribed (79.0%) -> subscribes
+      check: training clients giving the same answers: 563, subscribed 445
+
+Example 2: Opening view, with contact_type = unknown
+   age_group=Low, job_group=Skilled, marital=married, education=secondary, credit_default=no, balance_group=Low, housing=no
+   loan=no, contact_type=unknown, month_group=Q2, campaign_group=Low, pdays_group=Not contacted, poutcome=unknown
+   Logistic Regression: probability 26.1%, 21.3 points below the 47.4% overall rate -> do not call
+   Decision tree:
+      1. poutcome = success? no
+      2. contact_type = unknown? yes
+      3. month_group = Q2? yes
+      4. marital = married? yes
+      5. balance_group = Low? yes
+      reached by 352 training clients, 49 subscribed (13.9%) -> does not subscribe
+      check: training clients giving the same answers: 352, subscribed 49
+
+Example 3: Opening view, contacted recently and the previous campaign succeeded
+   age_group=Low, job_group=Skilled, marital=married, education=secondary, credit_default=no, balance_group=Low, housing=no
+   loan=no, contact_type=cellular, month_group=Q2, campaign_group=Low, pdays_group=Recent, poutcome=success
+   Logistic Regression: probability 91.0%, 43.6 points above the 47.4% overall rate -> call
+   Decision tree:
+      1. poutcome = success? yes
+      2. pdays_group = Long ago? no
+      3. age_group = Medium? no
+      4. month_group = Q2? yes
+      reached by 91 training clients, 74 subscribed (81.3%) -> subscribes
+      check: training clients giving the same answers: 91, subscribed 74
