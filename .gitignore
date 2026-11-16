@@ -1,0 +1,12 @@
+# Rebuilt by Init_Database.py on every run
+data/bank_marketing.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS files
+.DS_Store
+Thumbs.db
