@@ -1,0 +1,144 @@
+====================================================================
+ 03  EXPLORATORY DATA ANALYSIS
+====================================================================
+Records: 11162
+   deposit = no     5873  (52.6%)
+   deposit = yes    5289  (47.4%)
+
+====================================================================
+ 1  SUMMARY STATISTICS
+====================================================================
+
+            count     mean      std     min    25%    50%      75%      max  skew
+age       11162.0    41.23    11.91    18.0   32.0   39.0    49.00     95.0  0.86
+balance   11162.0  1528.54  3225.41 -6847.0  122.0  550.0  1708.00  81204.0  8.22
+day       11162.0    15.66     8.42     1.0    8.0   15.0    22.00     31.0  0.11
+duration  11162.0   371.99   347.13     2.0  138.0  255.0   496.00   3881.0  2.14
+campaign  11162.0     2.51     2.72     1.0    1.0    2.0     3.00     63.0  5.55
+pdays     11162.0    51.33   108.76    -1.0   -1.0   -1.0    20.75    854.0  2.45
+previous  11162.0     0.83     2.29     0.0    0.0    0.0     1.00     58.0  7.34
+
+Categorical attributes: level counts
+   job              12 levels
+   marital           3 levels
+   education         4 levels
+   credit_default    2 levels
+   housing           2 levels
+   loan              2 levels
+   contact_type      3 levels
+   month            12 levels
+   poutcome          4 levels
+
+====================================================================
+ 2  OUTLIER DETECTION (1.5 x IQR rule)
+====================================================================
+
+attribute         lower      upper  outliers  percent
+age                 6.5       74.5       171     1.5%
+balance         -2257.0     4087.0      1055     9.5%
+day               -13.0       43.0         0     0.0%
+duration         -399.0     1033.0       636     5.7%
+campaign           -2.0        6.0       601     5.4%
+pdays             -33.6       53.4      2750    24.6%
+previous           -1.5        2.5      1258    11.3%
+
+====================================================================
+ 3  CORRELATION COEFFICIENTS (Pearson, numeric attributes)
+====================================================================
+
+            age  balance    day  duration  campaign  pdays  previous
+age       1.000    0.112 -0.001     0.000    -0.005  0.003     0.020
+balance   0.112    1.000  0.010     0.022    -0.014  0.017     0.031
+day      -0.001    0.010  1.000    -0.019     0.137 -0.077    -0.059
+duration  0.000    0.022 -0.019     1.000    -0.042 -0.027    -0.027
+campaign -0.005   -0.014  0.137    -0.042     1.000 -0.103    -0.050
+pdays     0.003    0.017 -0.077    -0.027    -0.103  1.000     0.507
+previous  0.020    0.031 -0.059    -0.027    -0.050  0.507     1.000
+
+Pairs with |r| >= 0.10:
+   age        - balance    r =  0.112
+   day        - campaign   r =  0.137
+   campaign   - pdays      r = -0.103
+   pdays      - previous   r =  0.507
+
+Sentinel check, pdays - previous:
+   records at (pdays = -1, previous = 0): 8324
+   r, all records                      :  0.507  (n = 11162)
+   r, contacted before only            : -0.012  (n = 2838)
+
+====================================================================
+ 4  RELATIONSHIPS WITH THE TARGET
+====================================================================
+
+Overall subscription rate: 47.4%
+
+Subscription rate by level (as plotted in Figure 6),
+highest first:
+   job  (spread 38.3 points)
+      student         n=   360   rate= 74.7%
+      retired         n=   778   rate= 66.3%
+      unemployed      n=   357   rate= 56.6%
+      management      n=  2566   rate= 50.7%
+      unknown         n=    70   rate= 48.6%
+      admin.          n=  1334   rate= 47.3%
+      self-employed   n=   405   rate= 46.2%
+      technician      n=  1823   rate= 46.1%
+      services        n=   923   rate= 40.0%
+      housemaid       n=   274   rate= 39.8%
+      entrepreneur    n=   328   rate= 37.5%
+      blue-collar     n=  1944   rate= 36.4%
+   marital  (spread 11.0 points)
+      single          n=  3518   rate= 54.3%
+      divorced        n=  1293   rate= 48.1%
+      married         n=  6351   rate= 43.4%
+   education  (spread 14.7 points)
+      tertiary        n=  3689   rate= 54.1%
+      unknown         n=   497   rate= 50.7%
+      secondary       n=  5476   rate= 44.7%
+      primary         n=  1500   rate= 39.4%
+   housing  (spread 20.4 points)
+      no              n=  5881   rate= 57.0%
+      yes             n=  5281   rate= 36.6%
+   loan  (spread 16.4 points)
+      no              n=  9702   rate= 49.5%
+      yes             n=  1460   rate= 33.2%
+   contact_type  (spread 31.7 points)
+      cellular        n=  8042   rate= 54.3%
+      telephone       n=   774   rate= 50.4%
+      unknown         n=  2346   rate= 22.6%
+   month  (spread 58.2 points)
+      dec             n=   110   rate= 90.9%
+      mar             n=   276   rate= 89.9%
+      sep             n=   319   rate= 84.3%
+      oct             n=   392   rate= 82.4%
+      apr             n=   923   rate= 62.5%
+      feb             n=   776   rate= 56.8%
+      aug             n=  1519   rate= 45.3%
+      jun             n=  1222   rate= 44.7%
+      nov             n=   943   rate= 42.7%
+      jul             n=  1514   rate= 41.4%
+      jan             n=   344   rate= 41.3%
+      may             n=  2824   rate= 32.8%
+   poutcome  (spread 50.6 points)
+      success         n=  1071   rate= 91.3%
+      other           n=   537   rate= 57.2%
+      failure         n=  1228   rate= 50.3%
+      unknown         n=  8326   rate= 40.7%
+
+Medians by class (as plotted in Figure 7):
+   attribute         no       yes
+   age             39.0      38.0
+   balance        414.0     733.0
+   duration       163.0     426.0
+   campaign         2.0       2.0
+
+====================================================================
+ FIGURES WRITTEN
+====================================================================
+   fig01_target_distribution.png
+   fig02_numeric_distributions.png
+   fig03_boxplots.png
+   fig04_correlation_heatmap.png
+   fig05_scatterplots.png
+   fig06_categorical_rates.png
+   fig07_numeric_by_class.png

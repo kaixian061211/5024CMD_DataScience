@@ -1,0 +1,427 @@
+========================================================================
+ 04  PREDICTIVE MODELLING
+========================================================================
+Records: 11162
+Target: subscribed (47.4% positive)
+Split: 70% train / 30% test, stratified, random_state=42
+Cross-validation: 5-fold stratified, scored on F1 and AUC
+
+========================================================================
+ Variant A: WITH duration (benchmark only)
+========================================================================
+Input attributes: 15
+   age_group, job_group, marital, education, credit_default, balance_group, housing, loan, contact_type, month_group, campaign_group, pdays_group, contacted_before, poutcome, duration_group
+
+After one-hot encoding: 45 binary columns
+Training rows: 7813   Test rows: 3349
+Positive class in training: 47.4%   in test: 47.4%
+
+Held-out test results (sorted by F1)
+              Model  Accuracy  Precision  Recall    F1   AUC  CV F1 mean  CV F1 sd  CV AUC mean  CV AUC sd
+      Random Forest     0.824      0.796   0.844 0.819 0.892       0.813     0.003        0.887      0.003
+      Decision Tree     0.800      0.757   0.849 0.801 0.866       0.795     0.005        0.859      0.004
+Logistic Regression     0.801      0.801   0.773 0.786 0.877       0.785     0.001        0.874      0.003
+        Naive Bayes     0.728      0.727   0.681 0.704 0.820       0.700     0.011        0.815      0.009
+
+Best by F1: Random Forest
+
+========================================================================
+ Variant B: WITHOUT duration (deployable)
+========================================================================
+Input attributes: 14
+   age_group, job_group, marital, education, credit_default, balance_group, housing, loan, contact_type, month_group, campaign_group, pdays_group, contacted_before, poutcome
+
+After one-hot encoding: 42 binary columns
+Training rows: 7813   Test rows: 3349
+Positive class in training: 47.4%   in test: 47.4%
+
+Held-out test results (sorted by F1)
+              Model  Accuracy  Precision  Recall    F1   AUC  CV F1 mean  CV F1 sd  CV AUC mean  CV AUC sd
+Logistic Regression     0.693      0.710   0.597 0.648 0.741       0.650     0.012        0.747      0.012
+      Random Forest     0.700      0.730   0.581 0.647 0.759       0.649     0.013        0.760      0.014
+      Decision Tree     0.670      0.669   0.602 0.633 0.732       0.617     0.021        0.736      0.012
+        Naive Bayes     0.664      0.665   0.587 0.623 0.722       0.614     0.015        0.718      0.011
+
+Best by F1: Logistic Regression
+
+========================================================================
+ Logistic Regression vs Random Forest, same five folds
+ (Variant B: WITHOUT duration (deployable))
+========================================================================
+
+CV F1 by fold:
+   fold   Logistic Regression   Random Forest  difference
+      1                 0.659           0.646      -0.013
+      2                 0.627           0.633      +0.006
+      3                 0.652           0.669      +0.017
+      4                 0.661           0.656      -0.005
+      5                 0.649           0.640      -0.009
+   mean difference (Random Forest minus Logistic Regression): -0.001
+   sd of the differences: 0.011
+   folds where Random Forest is higher: 2 of 5
+
+CV AUC by fold:
+   fold   Logistic Regression   Random Forest  difference
+      1                 0.739           0.748      +0.010
+      2                 0.728           0.739      +0.012
+      3                 0.760           0.777      +0.017
+      4                 0.752           0.763      +0.011
+      5                 0.757           0.772      +0.015
+   mean difference (Random Forest minus Logistic Regression): +0.013
+   sd of the differences: 0.003
+   folds where Random Forest is higher: 5 of 5
+
+========================================================================
+ EFFECT OF REMOVING duration
+========================================================================
+
+Model                    F1 with  F1 without   change
+Random Forest              0.819       0.647   -0.172
+Decision Tree              0.801       0.633   -0.167
+Logistic Regression        0.786       0.648   -0.138
+Naive Bayes                0.704       0.623   -0.080
+
+The gap is the share of apparent performance that depends on
+information the bank cannot have before placing the call.
+
+Confusion matrix - Random Forest (Variant A: WITH duration (benchmark only))
+                    predicted no   predicted yes
+   actual no          1419             343
+   actual yes          248            1339
+
+   Correctly identified subscribers: 1339 of 1587
+   Wasted calls (predicted yes, said no): 343
+   Missed subscribers (predicted no, said yes): 248
+
+   As a call list:
+   Clients flagged to call: 1682 of 3349 (50.2% of the list)
+   Subscribers among them: 1339 (hit rate 79.6%, against 47.4% calling at random)
+   Share of all subscribers reached: 84.4%
+   Calling everyone instead: 3349 calls, 1587 subscribers, 1762 wasted calls
+
+Confusion matrix - Logistic Regression (Variant B: WITHOUT duration (deployable))
+                    predicted no   predicted yes
+   actual no          1375             387
+   actual yes          640             947
+
+   Correctly identified subscribers: 947 of 1587
+   Wasted calls (predicted yes, said no): 387
+   Missed subscribers (predicted no, said yes): 640
+
+   As a call list:
+   Clients flagged to call: 1334 of 3349 (39.8% of the list)
+   Subscribers among them: 947 (hit rate 71.0%, against 47.4% calling at random)
+   Share of all subscribers reached: 59.7%
+   Calling everyone instead: 3349 calls, 1587 subscribers, 1762 wasted calls
+
+========================================================================
+ DECISION TREE RULES (Variant B: WITHOUT duration (deployable))
+========================================================================
+
+|--- poutcome_success <= 0
+|   |--- contact_type_unknown <= 0
+|   |   |--- housing_yes <= 0
+|   |   |   |--- month_group_Q2 <= 0
+|   |   |   |   |--- truncated branch of depth 2
+|   |   |   |--- month_group_Q2 >  0
+|   |   |   |   |--- truncated branch of depth 2
+|   |   |--- housing_yes >  0
+|   |   |   |--- marital_single <= 0
+|   |   |   |   |--- truncated branch of depth 2
+|   |   |   |--- marital_single >  0
+|   |   |   |   |--- truncated branch of depth 2
+|   |--- contact_type_unknown >  0
+|   |   |--- month_group_Q2 <= 0
+|   |   |   |--- class: 0
+|   |   |--- month_group_Q2 >  0
+|   |   |   |--- marital_married <= 0
+|   |   |   |   |--- truncated branch of depth 2
+|   |   |   |--- marital_married >  0
+|   |   |   |   |--- truncated branch of depth 2
+|--- poutcome_success >  0
+|   |--- pdays_group_Long ago <= 0
+|   |   |--- age_group_Medium <= 0
+|   |   |   |--- month_group_Q2 <= 0
+|   |   |   |   |--- truncated branch of depth 2
+|   |   |   |--- month_group_Q2 >  0
+|   |   |   |   |--- class: 1
+|   |   |--- age_group_Medium >  0
+|   |   |   |--- education_tertiary <= 0
+|   |   |   |   |--- class: 1
+|   |   |   |--- education_tertiary >  0
+|   |   |   |   |--- class: 1
+|   |--- pdays_group_Long ago >  0
+|   |   |--- month_group_Q1 <= 0
+|   |   |   |--- education_tertiary <= 0
+|   |   |   |   |--- truncated branch of depth 2
+|   |   |   |--- education_tertiary >  0
+|   |   |   |   |--- class: 1
+|   |   |--- month_group_Q1 >  0
+|   |   |   |--- class: 1
+
+
+Training records at each node of the top three levels:
+   rule                                                                            records     no    yes    rate
+   all training records                                                               7813   4111   3702   47.4%
+   poutcome_success = 0                                                               7064   4044   3020   42.8%
+   poutcome_success = 0 and contact_type_unknown = 0                                  5415   2767   2648   48.9%
+   poutcome_success = 0 and contact_type_unknown = 0 and housing_yes = 0              3120   1387   1733   55.5%
+   poutcome_success = 0 and contact_type_unknown = 0 and housing_yes = 1              2295   1380    915   39.9%
+   poutcome_success = 0 and contact_type_unknown = 1                                  1649   1277    372   22.6%
+   poutcome_success = 0 and contact_type_unknown = 1 and month_group_Q2 = 0             76     39     37   48.7%
+   poutcome_success = 0 and contact_type_unknown = 1 and month_group_Q2 = 1           1573   1238    335   21.3%
+   poutcome_success = 1                                                                749     67    682   91.1%
+   poutcome_success = 1 and pdays_group_Long ago = 0                                   412     45    367   89.1%
+   poutcome_success = 1 and pdays_group_Long ago = 0 and age_group_Medium = 0          278     36    242   87.1%
+   poutcome_success = 1 and pdays_group_Long ago = 0 and age_group_Medium = 1          134      9    125   93.3%
+   poutcome_success = 1 and pdays_group_Long ago = 1                                   337     22    315   93.5%
+   poutcome_success = 1 and pdays_group_Long ago = 1 and month_group_Q1 = 0            268     13    255   95.1%
+   poutcome_success = 1 and pdays_group_Long ago = 1 and month_group_Q1 = 1             69      9     60   87.0%
+
+========================================================================
+ FEATURE IMPORTANCE - Random Forest (Variant B: WITHOUT duration (deployable))
+========================================================================
+
+   poutcome_success                   0.1251
+   contact_type_unknown               0.1018
+   housing_yes                        0.0699
+   contact_type_cellular              0.0697
+   housing_no                         0.0554
+   contacted_before_no                0.0488
+   month_group_Q2                     0.0400
+   month_group_Q3                     0.0377
+   poutcome_unknown                   0.0370
+   pdays_group_Not contacted          0.0346
+   balance_group_Low                  0.0329
+   balance_group_High                 0.0288
+   contacted_before_yes               0.0265
+   job_group_Non-working              0.0254
+   poutcome_failure                   0.0211
+
+========================================================================
+ COEFFICIENTS - Logistic Regression (Variant B: WITHOUT duration (deployable))
+========================================================================
+
+Default L2 regularisation (C = 1.0), so coefficients are shrunk
+towards zero. Odds ratios compare two levels of one attribute
+with every other input held fixed. contacted_before, the
+'Not contacted' level of pdays_group and the 'unknown' level of
+poutcome describe almost the same clients, so the model shares
+that one effect between them and none of the three can be read
+on its own.
+
+Intercept: -0.030
+
+Attributes ranked by the gap between their highest and lowest
+level:
+   attribute          highest level    lowest level        gap  odds ratio
+   poutcome           success          failure           2.117        8.31
+   contact_type       cellular         unknown           1.179        3.25
+   job_group          Non-working      Unknown           0.821        2.27
+   balance_group      High             Low               0.603        1.83
+   age_group          High             Medium            0.587        1.80
+   housing            no               yes               0.540        1.72
+   campaign_group     Low              High              0.521        1.68
+   loan               no               yes               0.422        1.53
+   month_group        Q2               Q3                0.411        1.51
+   education          tertiary         primary           0.395        1.48
+   contacted_before * yes              no                0.355        1.43
+   marital            single           married           0.299        1.35
+   pdays_group *      Recent           Not contacted     0.298        1.35
+   credit_default     no               yes               0.044        1.05
+   * gap shares the never-contacted effect (see note above)
+
+Every level, with its odds ratio against the lowest level and
+against the most common level of its attribute:
+   poutcome   (most common level: unknown, n = 8326)
+      level                 n coefficient  OR vs lowest  OR vs common
+      success            1071      +1.367          8.31          4.57
+      unknown            8326      -0.153          1.82          1.00
+      other               537      -0.490          1.30          0.71
+      failure            1228      -0.750          1.00          0.55
+   contact_type   (most common level: cellular, n = 8042)
+      level                 n coefficient  OR vs lowest  OR vs common
+      cellular           8042      +0.480          3.25          1.00
+      telephone           774      +0.191          2.43          0.75
+      unknown            2346      -0.698          1.00          0.31
+   job_group   (most common level: Skilled, n = 4964)
+      level                 n coefficient  OR vs lowest  OR vs common
+      Non-working        1495      +0.446          2.27          1.62
+      Skilled            4964      -0.034          1.41          1.00
+      White collar       4633      -0.065          1.36          0.97
+      Unknown              70      -0.374          1.00          0.71
+   balance_group   (most common level: Low, n = 3724)
+      level                 n coefficient  OR vs lowest  OR vs common
+      High               3721      +0.284          1.83          1.83
+      Medium             3717      +0.008          1.39          1.39
+      Low                3724      -0.319          1.00          1.00
+   age_group   (most common level: Low, n = 7038)
+      level                 n coefficient  OR vs lowest  OR vs common
+      High                296      +0.380          1.80          1.78
+      Low                7038      -0.199          1.01          1.00
+      Medium             3828      -0.207          1.00          0.99
+   housing   (most common level: no, n = 5881)
+      level                 n coefficient  OR vs lowest  OR vs common
+      no                 5881      +0.257          1.72          1.00
+      yes                5281      -0.283          1.00          0.58
+   campaign_group   (most common level: Low, n = 4798)
+      level                 n coefficient  OR vs lowest  OR vs common
+      Low                4798      +0.237          1.68          1.00
+      Medium             4349      +0.020          1.36          0.80
+      High               2015      -0.284          1.00          0.59
+   loan   (most common level: no, n = 9702)
+      level                 n coefficient  OR vs lowest  OR vs common
+      no                 9702      +0.198          1.53          1.00
+      yes                1460      -0.225          1.00          0.66
+   month_group   (most common level: Q2, n = 4969)
+      level                 n coefficient  OR vs lowest  OR vs common
+      Q2                 4969      +0.226          1.51          1.00
+      Q1                 1396      -0.011          1.19          0.79
+      Q4                 1445      -0.057          1.14          0.75
+      Q3                 3352      -0.185          1.00          0.66
+   education   (most common level: secondary, n = 5476)
+      level                 n coefficient  OR vs lowest  OR vs common
+      tertiary           3689      +0.189          1.48          1.18
+      secondary          5476      +0.026          1.26          1.00
+      unknown             497      -0.036          1.18          0.94
+      primary            1500      -0.206          1.00          0.79
+   contacted_before   (most common level: no, n = 8324)
+      level                 n coefficient  OR vs lowest  OR vs common
+      yes                2838      +0.164          1.43          1.43
+      no                 8324      -0.191          1.00          1.00
+   marital   (most common level: married, n = 6351)
+      level                 n coefficient  OR vs lowest  OR vs common
+      single             3518      +0.120          1.35          1.35
+      divorced           1293      +0.032          1.23          1.23
+      married            6351      -0.179          1.00          1.00
+   pdays_group   (most common level: Not contacted, n = 8324)
+      level                 n coefficient  OR vs lowest  OR vs common
+      Recent             1279      +0.107          1.35          1.35
+      Long ago           1559      +0.057          1.28          1.28
+      Not contacted      8324      -0.191          1.00          1.00
+   credit_default   (most common level: no, n = 10994)
+      level                 n coefficient  OR vs lowest  OR vs common
+      no                10994      +0.009          1.05          1.00
+      yes                 168      -0.035          1.00          0.96
+
+Values plotted in fig13_lr_odds_ratios.png (odds ratio of each
+level against the reference shown):
+   poutcome: success  (vs failure)                 8.31
+   poutcome: other  (vs failure)                   1.30
+   contact_type: telephone  (vs cellular)          0.75
+   contact_type: unknown  (vs cellular)            0.31
+   job_group: Non-working  (vs Skilled)            1.62
+   job_group: White collar  (vs Skilled)           0.97
+   job_group: Unknown  (vs Skilled)                0.71
+   balance_group: High  (vs Low)                   1.83
+   balance_group: Medium  (vs Low)                 1.39
+   age_group: High  (vs Low)                       1.78
+   age_group: Medium  (vs Low)                     0.99
+   housing: yes  (vs no)                           0.58
+   campaign_group: Medium  (vs Low)                0.80
+   campaign_group: High  (vs Low)                  0.59
+   loan: yes  (vs no)                              0.66
+   month_group: Q1  (vs Q2)                        0.79
+   month_group: Q4  (vs Q2)                        0.75
+   month_group: Q3  (vs Q2)                        0.66
+   education: tertiary  (vs secondary)             1.18
+   education: unknown  (vs secondary)              0.94
+   education: primary  (vs secondary)              0.79
+   marital: single  (vs married)                   1.35
+   marital: divorced  (vs married)                 1.23
+   credit_default: yes  (vs no)                    0.96
+
+========================================================================
+ CONTEXT FOR THE month_group COEFFICIENT
+========================================================================
+
+Records by quarter and contact type:
+contact_type  cellular  telephone  unknown
+month_group                               
+Q1                1245        141       10
+Q2                2550        188     2231
+Q3                3014        272       66
+Q4                1233        173       39
+
+unknown contact_type records: 2346, of which 2231 are in Q2
+
+Subscription rate by quarter, split by whether the contact type
+was recorded:
+   quarter             all         recorded          unknown  share unknown
+   Q1         59.5% (n=1396)   59.3% (n=1386)   90.0% (n=  10)           0.7%
+   Q2         41.2% (n=4969)   57.6% (n=2738)   21.2% (n=2231)          44.9%
+   Q3         47.3% (n=3352)   47.6% (n=3286)   28.8% (n=  66)           2.0%
+   Q4         57.2% (n=1445)   56.6% (n=1406)   76.9% (n=  39)           2.7%
+
+========================================================================
+ CHECK: DEPENDENCE ON contact_type (Logistic Regression, Variant B)
+========================================================================
+
+(1) Refit without contact_type (13 inputs):
+   measure          with  without   change
+   F1              0.648    0.618   -0.030
+   AUC             0.741    0.721   -0.020
+   CV F1 mean      0.650    0.620   -0.030
+   CV AUC mean     0.747    0.724   -0.023
+   CV F1 sd without contact_type: 0.017   CV AUC sd: 0.012
+   (changes are differences of the rounded values)
+
+(2) Variant B model scored on test clients split by whether the
+    contact type was recorded:
+   group       clients  subscribers    rate  flagged  precision  recall     F1    AUC
+   recorded       2655         1431   53.9%     1330      0.711   0.661  0.685  0.722
+   unknown         694          156   22.5%        4      0.250   0.006  0.013  0.538
+   all            3349         1587   47.4%     1334      0.710   0.597  0.648  0.741
+
+========================================================================
+ CHECK: ADDING day AND previous TO VARIANT B
+========================================================================
+
+Overlap of previous with contacted_before:
+   previous = 0                     : 8324
+   contacted_before = no            : 8324
+   rows where the two disagree      : 0 of 11162
+   so the previous = 0 column duplicates contacted_before = no
+
+One-hot columns per feature set:
+   Variant B (14 inputs)    42
+   + day                    73
+   + previous               46
+   + day + previous         77
+
+Test F1, with 5-fold CV F1 mean in brackets:
+   Feature set                Logistic Regression         Random Forest         Decision Tree           Naive Bayes
+   Variant B (14 inputs)            0.648 (0.650)         0.647 (0.649)         0.633 (0.617)         0.623 (0.614)
+   + day                            0.646 (0.653)         0.645 (0.649)         0.633 (0.617)         0.634 (0.623)
+   + previous                       0.647 (0.650)         0.651 (0.648)         0.633 (0.617)         0.595 (0.581)
+   + day + previous                 0.644 (0.653)         0.644 (0.651)         0.633 (0.617)         0.602 (0.589)
+
+CV F1 standard deviation:
+   Feature set                Logistic Regression         Random Forest         Decision Tree           Naive Bayes
+   Variant B (14 inputs)                    0.012                 0.013                 0.021                 0.015
+   + day                                    0.012                 0.012                 0.021                 0.012
+   + previous                               0.012                 0.013                 0.021                 0.017
+   + day + previous                         0.011                 0.012                 0.021                 0.016
+
+Change from Variant B, test F1 (CV F1 mean in brackets),
+as differences of the rounded values above:
+   Feature set                Logistic Regression         Random Forest         Decision Tree           Naive Bayes
+   + day                          -0.002 (+0.003)       -0.002 (+0.000)       +0.000 (+0.000)       +0.011 (+0.009)
+   + previous                     -0.001 (+0.000)       +0.004 (-0.001)       +0.000 (+0.000)       -0.028 (-0.033)
+   + day + previous               -0.004 (+0.003)       -0.003 (+0.002)       +0.000 (+0.000)       -0.021 (-0.025)
+
+Decision Tree: splits on a day or previous column, and test
+predictions that differ from Variant B:
+   + day                    splits = 1   predictions changed = 0 of 3349
+   + previous               splits = 0   predictions changed = 0 of 3349
+   + day + previous         splits = 1   predictions changed = 0 of 3349
+
+========================================================================
+ FIGURES WRITTEN
+========================================================================
+   fig08_model_comparison.png
+   fig09_roc_curves.png
+   fig10_confusion_matrices.png
+   fig11_feature_importance.png
+   fig12_decision_tree.png
+   fig13_lr_odds_ratios.png

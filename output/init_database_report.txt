@@ -1,0 +1,18 @@
+==============================================================
+ 01  BUILD DATABASE
+==============================================================
+
+Source file: data/bank.csv
+Records read: 11162
+Columns read: 17
+
+Table row counts
+   Client              11162   OK
+   Contact             11162   OK
+   Outcome             11162   OK
+   PreviousCampaign     2838   (clients with prior history only)
+
+Orphan contact rows: 0
+AnalysisSet view:    11162 rows
+
+Database written to: data/bank_marketing.db

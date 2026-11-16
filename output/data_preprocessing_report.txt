@@ -1,0 +1,185 @@
+==============================================================
+ 1  DATA QUALITY CHECKS
+==============================================================
+
+Records: 11162
+Attributes: 19
+Missing (null) values: 0
+Exact duplicate rows (source columns only): 0
+
+Disguised missing values ('unknown')
+   job                70  (  0.6%)
+   education         497  (  4.5%)
+   contact_type     2346  ( 21.0%)
+   poutcome         8326  ( 74.6%)
+   total           11239
+
+pdays = -1 (never previously contacted): 8324 (74.6%)
+poutcome = 'unknown':                    8326 (74.6%)
+   both conditions (never contacted):     8324
+   contacted, but outcome not recorded:   2
+The two groups almost coincide but are not identical: poutcome
+'unknown' also covers a small number of clients who were contacted
+but whose outcome was never recorded. Only those are genuinely missing.
+
+contact_type = 'unknown':                2346 (21.0%)
+The channel was not recorded for these calls. It is kept as its own
+level rather than imputed, because its subscription rate differs
+sharply from the recorded channels and so carries information.
+
+Negative balance (overdrawn accounts): 688 (6.2%)
+Valid values, not errors, so they are retained.
+
+Skew and outliers (1.5 x IQR rule)
+   age        skew=  0.86   upper fence=    74.5   outliers=  171 ( 1.5%)
+   balance    skew=  8.22   upper fence=  4087.0   outliers= 1055 ( 9.5%)
+   duration   skew=  2.14   upper fence=  1033.0   outliers=  636 ( 5.7%)
+   campaign   skew=  5.55   upper fence=     6.0   outliers=  601 ( 5.4%)
+   pdays      skew=  2.45   upper fence=    53.4   outliers= 2750 (24.6%)
+   previous   skew=  7.34   upper fence=     2.5   outliers= 1258 (11.3%)
+
+Note: the counts for pdays and previous are artefacts of the
+sentinel. Because 74.6% of pdays values are -1, the quartiles
+collapse towards the sentinel and the upper fence falls below
+almost every genuine value, so nearly every client who WAS
+contacted before is flagged. The same pile-up at zero inflates
+previous. These are not extreme values and are not treated as
+outliers.
+
+==============================================================
+ 2  CONVERTING NUMERIC ATTRIBUTES TO CATEGORICAL
+==============================================================
+
+Equal-width method, interval = (max - min) / 3
+   age        interval=     25.7   largest band holds  63.1%   usable
+   balance    interval=  29350.3   largest band holds  99.6%   UNUSABLE
+   duration   interval=   1293.0   largest band holds  97.4%   UNUSABLE
+   campaign   interval=     20.7   largest band holds  99.7%   UNUSABLE
+
+A band holding almost every record cannot separate the
+classes, so quantile bands are used where skew is severe.
+
+==============================================================
+ 3  DO THE NEW BANDS SEPARATE THE TARGET?
+==============================================================
+
+Overall subscription rate: 47.4%
+
+age_group
+   Low            n=  7038 (63.1%)   rate= 46.8%   range 18 to 43
+   Medium         n=  3828 (34.3%)   rate= 46.1%   range 44 to 69
+   High           n=   296 ( 2.7%)   rate= 79.4%   range 70 to 95
+   spread = 33.3 percentage points
+
+balance_group
+   Low            n=  3724 (33.4%)   rate= 37.8%   range -6847 to 235
+   Medium         n=  3717 (33.3%)   rate= 48.1%   range 236 to 1158
+   High           n=  3721 (33.3%)   rate= 56.2%   range 1159 to 81204
+   spread = 18.4 percentage points
+
+duration_group
+   Low            n=  3741 (33.5%)   rate= 17.0%   range 2 to 172
+   Medium         n=  3700 (33.1%)   rate= 47.2%   range 173 to 383
+   High           n=  3721 (33.3%)   rate= 78.1%   range 384 to 3881
+   spread = 61.1 percentage points
+
+campaign_group
+   Low            n=  4798 (43.0%)   rate= 53.4%   range 1 to 1
+   Medium         n=  4349 (39.0%)   rate= 46.4%   range 2 to 3
+   High           n=  2015 (18.1%)   rate= 35.2%   range 4 to 63
+   spread = 18.2 percentage points
+
+pdays_group
+   Long ago       n=  1559 (14.0%)   rate= 62.5%   range 181 to 854
+   Not contacted  n=  8324 (74.6%)   rate= 40.7%   range -1 to -1
+   Recent         n=  1279 (11.5%)   rate= 72.8%   range 1 to 180
+   spread = 32.1 percentage points
+
+job_group
+   Non-working    n=  1495 (13.4%)   rate= 66.0%
+   Skilled        n=  4964 (44.5%)   rate= 40.8%
+   Unknown        n=    70 ( 0.6%)   rate= 48.6%
+   White collar   n=  4633 (41.5%)   rate= 48.4%
+   spread = 25.2 percentage points
+
+month_group
+   Q1             n=  1396 (12.5%)   rate= 59.5%
+   Q2             n=  4969 (44.5%)   rate= 41.2%
+   Q3             n=  3352 (30.0%)   rate= 47.3%
+   Q4             n=  1445 (12.9%)   rate= 57.2%
+   spread = 18.3 percentage points
+
+==============================================================
+ 4  ATTRIBUTE SELECTION
+==============================================================
+
+Mutual information with the target, all candidates ranked
+   duration         0.1566
+   pdays            0.0514
+   poutcome         0.0504
+   month            0.0501
+   balance          0.0413
+   contact_type     0.0347
+   previous         0.0294
+   housing          0.0210
+   age              0.0205
+   job              0.0172
+   day              0.0166
+   campaign         0.0118
+   loan             0.0062
+   education        0.0055
+   marital          0.0049
+   credit_default   0.0009
+
+Subscription rate by level (categorical attributes)
+
+poutcome
+   failure        n=  1228 rate= 50.3%
+   other          n=   537 rate= 57.2%
+   success        n=  1071 rate= 91.3%
+   unknown        n=  8326 rate= 40.7%
+   spread = 50.6 percentage points
+
+month
+   apr            n=   923 rate= 62.5%
+   aug            n=  1519 rate= 45.3%
+   dec            n=   110 rate= 90.9%
+   feb            n=   776 rate= 56.8%
+   jan            n=   344 rate= 41.3%
+   jul            n=  1514 rate= 41.4%
+   jun            n=  1222 rate= 44.7%
+   mar            n=   276 rate= 89.9%
+   may            n=  2824 rate= 32.8%
+   nov            n=   943 rate= 42.7%
+   oct            n=   392 rate= 82.4%
+   sep            n=   319 rate= 84.3%
+   spread = 58.2 percentage points
+
+housing
+   no             n=  5881 rate= 57.0%
+   yes            n=  5281 rate= 36.6%
+   spread = 20.4 percentage points
+
+loan
+   no             n=  9702 rate= 49.5%
+   yes            n=  1460 rate= 33.2%
+   spread = 16.4 percentage points
+
+contact_type
+   cellular       n=  8042 rate= 54.3%
+   telephone      n=   774 rate= 50.4%
+   unknown        n=  2346 rate= 22.6%
+   spread = 31.7 percentage points
+
+marital
+   divorced       n=  1293 rate= 48.1%
+   married        n=  6351 rate= 43.4%
+   single         n=  3518 rate= 54.3%
+   spread = 11.0 percentage points
+
+education
+   primary        n=  1500 rate= 39.4%
+   secondary      n=  5476 rate= 44.7%
+   tertiary       n=  3689 rate= 54.1%
+   unknown        n=   497 rate= 50.7%
+   spread = 14.7 percentage points
