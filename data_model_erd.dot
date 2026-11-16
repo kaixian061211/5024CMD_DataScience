@@ -1,0 +1,70 @@
+digraph BankMarketingSchema {
+    graph [rankdir=LR, fontname="Helvetica", nodesep=0.6, ranksep=1.1,
+           pad=0.3, bgcolor="white"];
+    node  [shape=plain, fontname="Helvetica", fontsize=11];
+    edge  [fontname="Helvetica", fontsize=10, color="#555555",
+           arrowhead=none, penwidth=1.3];
+
+    Client [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#2F4F75">
+      <TR><TD BGCOLOR="#2F4F75" COLSPAN="2"><FONT COLOR="white"><B>Client</B>  (11,162 rows)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>client_id</B></TD><TD ALIGN="LEFT" PORT="out"><I>PK</I></TD></TR>
+      <TR><TD ALIGN="LEFT">age</TD><TD ALIGN="LEFT">INTEGER</TD></TR>
+      <TR><TD ALIGN="LEFT">job</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+      <TR><TD ALIGN="LEFT">marital</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+      <TR><TD ALIGN="LEFT">education</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+      <TR><TD ALIGN="LEFT">credit_default</TD><TD ALIGN="LEFT">TEXT  yes/no</TD></TR>
+      <TR><TD ALIGN="LEFT">balance</TD><TD ALIGN="LEFT">INTEGER</TD></TR>
+      <TR><TD ALIGN="LEFT">housing</TD><TD ALIGN="LEFT">TEXT  yes/no</TD></TR>
+      <TR><TD ALIGN="LEFT">loan</TD><TD ALIGN="LEFT">TEXT  yes/no</TD></TR>
+    </TABLE>>];
+
+    Contact [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#2F4F75">
+      <TR><TD BGCOLOR="#2F4F75" COLSPAN="2"><FONT COLOR="white"><B>Contact</B>  (11,162 rows)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>contact_id</B></TD><TD ALIGN="LEFT" PORT="out"><I>PK</I></TD></TR>
+      <TR><TD ALIGN="LEFT" PORT="in">client_id</TD><TD ALIGN="LEFT"><I>FK</I></TD></TR>
+      <TR><TD ALIGN="LEFT">contact_type</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+      <TR><TD ALIGN="LEFT">day</TD><TD ALIGN="LEFT">INTEGER  1–31</TD></TR>
+      <TR><TD ALIGN="LEFT">month</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+      <TR><TD ALIGN="LEFT">duration</TD><TD ALIGN="LEFT">INTEGER</TD></TR>
+      <TR><TD ALIGN="LEFT">campaign</TD><TD ALIGN="LEFT">INTEGER</TD></TR>
+    </TABLE>>];
+
+    PreviousCampaign [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#2F4F75">
+      <TR><TD BGCOLOR="#2F4F75" COLSPAN="2"><FONT COLOR="white"><B>PreviousCampaign</B>  (2,838 rows)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" PORT="in"><B>client_id</B></TD><TD ALIGN="LEFT"><I>PK, FK</I></TD></TR>
+      <TR><TD ALIGN="LEFT">pdays</TD><TD ALIGN="LEFT">INTEGER</TD></TR>
+      <TR><TD ALIGN="LEFT">previous</TD><TD ALIGN="LEFT">INTEGER</TD></TR>
+      <TR><TD ALIGN="LEFT">poutcome</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+    </TABLE>>];
+
+    Outcome [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#2F4F75">
+      <TR><TD BGCOLOR="#2F4F75" COLSPAN="2"><FONT COLOR="white"><B>Outcome</B>  (11,162 rows)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" PORT="in"><B>contact_id</B></TD><TD ALIGN="LEFT"><I>PK, FK</I></TD></TR>
+      <TR><TD ALIGN="LEFT">deposit</TD><TD ALIGN="LEFT">TEXT  yes/no</TD></TR>
+    </TABLE>>];
+
+    AnalysisSet [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" COLOR="#8A6D3B" STYLE="dashed">
+      <TR><TD BGCOLOR="#F5EBD7"><B>AnalysisSet</B>  (view)</TD></TR>
+      <TR><TD ALIGN="LEFT">Joins all four tables</TD></TR>
+      <TR><TD ALIGN="LEFT">LEFT JOIN + COALESCE</TD></TR>
+      <TR><TD ALIGN="LEFT">restores sentinels</TD></TR>
+      <TR><TD ALIGN="LEFT">adds contacted_before</TD></TR>
+      <TR><TD ALIGN="LEFT">11,162 rows x 19 columns</TD></TR>
+    </TABLE>>];
+
+    Client:out:e -> Contact:in:w          [label="  1 : 1..*  ", dir=both,
+                                      arrowtail=tee, arrowhead=crow];
+    Client:out:e -> PreviousCampaign:in:w [label="  1 : 0..1  ", dir=both,
+                                      arrowtail=tee, arrowhead=teeodot];
+    Contact:out:e -> Outcome:in:w         [label="  1 : 1  ", dir=both,
+                                      arrowtail=tee, arrowhead=tee];
+
+    {Client Contact PreviousCampaign Outcome} -> AnalysisSet
+        [style=dashed, color="#8A6D3B", arrowhead=normal, penwidth=0.9, constraint=false];
+    {rank=same; Outcome; AnalysisSet}
+}
