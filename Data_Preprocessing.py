@@ -187,7 +187,7 @@ def discretise(data):
     )
 
     # campaign has too many repeated values for quantile bands,
-    # so business cut-points are used instead
+    # so fixed cut-points are used instead
     data["campaign_group"] = pd.cut(
         data["campaign"],
         bins=[0, 1, 3, data["campaign"].max()],
