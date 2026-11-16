@@ -23,6 +23,8 @@ pip install -r requirements.txt
 ```
 
 Figure 2.1 also needs [Graphviz](https://graphviz.org/) (`dot` on the PATH).
+The Rule Explorer needs Tkinter, which comes with the python.org installers
+for Windows and macOS; on Linux, install the `python3-tk` package.
 
 ## Run order
 
@@ -41,6 +43,30 @@ Stage 1 rebuilds the database from scratch, which also removes the
 depend on stages 1 and 2 but not on each other. Every random process uses a
 fixed seed, so repeated runs give identical logs.
 
+## Rule Explorer
+
+```
+python Rule_Explorer.py            # opens the window
+python Rule_Explorer.py --check    # prints the model checks only
+```
+
+A small window for trying the model on one client at a time, run after
+stages 1 and 2. Each input of the deployable model (Variant B, without
+duration) has a row of buttons. Choosing a client shows the Logistic
+Regression probability of subscribing against the 47.4% overall rate, the
+decision tree rule the client falls under with its training counts, and the
+business rules that apply. A client who was never contacted before has the
+previous outcome fixed at `unknown`, as in the data.
+
+The models are rebuilt with the same inputs, split, seed and settings as
+`Predictive_Model.py`, so they match Section 4 of the report: the check
+prints Logistic Regression test F1 0.648 and AUC 0.741, and the tree's root
+split of 749 training clients, 682 of whom subscribed. "Random test client"
+loads a client from the 30% test set and shows whether they actually
+subscribed.
+
+![Rule Explorer window](docs/rule_explorer.png)
+
 ## Files
 
 | File | Stage | Reads | Writes |
@@ -49,6 +75,7 @@ fixed seed, so repeated runs give identical logs.
 | `Data_Preprocessing.py` | 2 | `AnalysisSet` | `CleanedData` table, `output/data_preprocessing_report.txt` |
 | `Exploratory_Analysis.py` | 3 | `CleanedData` | Figures 1.1 and 3.1–3.6, `output/exploratory_analysis_report.txt` |
 | `Predictive_Model.py` | 4 | `CleanedData` | Figures 4.1–4.5, `output/predictive_model_report.txt` |
+| `Rule_Explorer.py` | – | `CleanedData` | Nothing (opens a window) |
 | `data_model_erd.dot` | – | – | Source for Figure 2.1 |
 
 The database is not committed, because stage 1 rebuilds it. The logs and
